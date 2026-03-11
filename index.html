@@ -185,7 +185,7 @@ button{font-family:var(--body);cursor:pointer;border:none;outline:none;transitio
 </div>
 <script>window.onerror=function(m,u,l){var s=document.getElementById('staticLoader');if(s)s.innerHTML='<div style="color:#C06070;font-size:14px;padding:20px;text-align:center">'+m+'<br><span style="font-size:10px;color:#666">Line '+l+'</span></div>';return true;};</script>
 <script>
-var VERSION="4.0";
+var VERSION="5.0";
 var DN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 var LS={get:function(k,d){try{var v=JSON.parse(localStorage.getItem("fc_"+k));return v!=null?v:d;}catch(e){return d;}},set:function(k,v){try{localStorage.setItem("fc_"+k,JSON.stringify(v));}catch(e){}}};
@@ -364,7 +364,7 @@ function renderClients(){
     html+='<div class="cd cd-link" style="display:flex;align-items:center;gap:14px" onclick="push(\'detail\',{clientIdx:'+i+'})">'
       +'<div style="width:42px;height:42px;border-radius:10px;background:rgba(170,185,200,.06);border:2px solid '+col+'40;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:700;color:'+col+';flex-shrink:0">'+c.name[0].toUpperCase()+'</div>'
       +'<div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--wh)">'+esc(c.name)+'</div>'
-      +'<div style="font-size:10px;color:var(--dm);font-family:var(--mono)">'+(c.services||"Training")+' \u00b7 '+(c.clientType||"In-Person")+' \u00b7 '+count+' session'+(count!==1?"s":"")+'</div>'
+      +'<div style="font-size:10px;color:var(--dm);font-family:var(--mono)">'+(c.services||"Training")+' \u00b7 '+(c.clientType||"In-Person")+' \u00b7 '+count+' session'+(count!==1?"s":"")+((c.dietary||"").indexOf("Gluten-Free")>=0?' \u00b7 <span style="color:var(--success)">GF</span>':'')+'</div>'
       +'<div style="margin-top:3px">'+dsBadge+stBadge+'</div></div>'
       +'<div style="color:var(--dm);font-size:14px">\u203a</div></div>';
   }
@@ -406,6 +406,14 @@ function clientFormFields(c){
     for(var w=2;w<=20;w++)html+='<option value="'+w+'"'+((parseInt(c.prepWeeks)||12)===w?' selected':'')+'>'+w+' weeks</option>';
     html+='</select></div><div><span class="lb">START DATE</span><input id="cPS" type="date" value="'+(c.prepStart||"")+'"></div></div></div>';
   }
+  var dietOpts=["Gluten-Free","Dairy-Free","Vegan","Vegetarian","Keto","Paleo","Halal","Kosher"];
+  var curDiet=(c.dietary||"").split(",").map(function(s){return s.trim();}).filter(function(s){return s;});
+  html+='<div class="sl" style="margin-top:14px">DIETARY &amp; ALLERGIES</div><div class="cd" style="padding:18px">'
+    +'<span class="lb">DIETARY RESTRICTIONS</span><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px" id="cDietChips">';
+  for(var di2=0;di2<dietOpts.length;di2++){var don=curDiet.indexOf(dietOpts[di2])>=0;html+='<div class="chip'+(don?" on":"")+'" onclick="toggleDietChip(this)" style="font-size:9px;padding:4px 8px'+(dietOpts[di2]==="Gluten-Free"&&don?";background:rgba(120,200,120,.12);border-color:rgba(120,200,120,.35);color:var(--success)":"")+'">'+dietOpts[di2]+'</div>';}
+  html+='</div><input type="hidden" id="cDiet" value="'+esc(c.dietary||'')+'">'
+    +'<div class="field"><span class="lb">FOOD ALLERGIES</span><input id="cAllergy" placeholder="Nuts, shellfish, soy..." value="'+esc(c.allergies||'')+'"></div>'
+    +'<div><span class="lb">DIETARY NOTES</span><textarea id="cDietNotes" rows="2" placeholder="Sensitivities, preferences, restrictions...">'+esc(c.dietaryNotes||'')+'</textarea></div></div>';
   html+='<div class="sl" style="margin-top:14px">HEALTH &amp; NOTES</div><div class="cd" style="padding:18px">'
     +'<div class="field"><span class="lb">GOALS</span><textarea id="cG" rows="2" placeholder="What do they want?">'+esc(c.goals||'')+'</textarea></div>'
     +'<div class="field"><span class="lb">INJURIES / LIMITATIONS</span><textarea id="cI" rows="2" placeholder="Surgeries, joint issues...">'+esc(c.injuries||'')+'</textarea></div>'
@@ -415,7 +423,8 @@ function clientFormFields(c){
 }
 function renderClientAdd(){return '<button class="btn2" onclick="pop()" style="margin-bottom:14px">\u2039 Back</button><div class="pt">New Client</div>'+clientFormFields()+'<button class="btn" style="margin-top:16px" onclick="saveNewClient()">SAVE CLIENT</button>';}
 function renderClientEdit(){var c=clients[currentView.data.clientIdx];if(!c){pop();return"";}return '<button class="btn2" onclick="pop()" style="margin-bottom:14px">\u2039 Back</button><div class="pt">Edit Client</div>'+clientFormFields(c)+'<button class="btn" style="margin-top:16px" onclick="saveEditClient()">UPDATE CLIENT</button>';}
-function readClientForm(){return{name:val("cN"),phone:val("cP"),email:val("cE"),clientType:val("cCTv"),services:val("cSv"),rate:val("cR"),age:val("cA"),weight:val("cWt"),height:val("cHt"),level:val("cLv"),duration:val("cDv"),billing:val("cBv"),billingAmt:val("cBA"),billingMonths:val("cBM"),prepWeeks:val("cPW"),prepStart:val("cPS"),goals:val("cG"),injuries:val("cI"),medical:val("cM"),notes:val("cO")};}
+function toggleDietChip(el2){el2.classList.toggle("on");var cs2=el2.parentNode.querySelectorAll(".chip.on"),vs=[];cs2.forEach(function(c2){vs.push(c2.textContent);});var inp=document.getElementById("cDiet");if(inp)inp.value=vs.join(",");var isGF=vs.indexOf("Gluten-Free")>=0;el2.parentNode.querySelectorAll(".chip").forEach(function(c2){if(c2.textContent==="Gluten-Free"){c2.style.background=isGF?"rgba(120,200,120,.12)":"";c2.style.borderColor=isGF?"rgba(120,200,120,.35)":"";c2.style.color=isGF?"var(--success)":"";}});}
+function readClientForm(){return{name:val("cN"),phone:val("cP"),email:val("cE"),clientType:val("cCTv"),services:val("cSv"),rate:val("cR"),age:val("cA"),weight:val("cWt"),height:val("cHt"),level:val("cLv"),duration:val("cDv"),billing:val("cBv"),billingAmt:val("cBA"),billingMonths:val("cBM"),prepWeeks:val("cPW"),prepStart:val("cPS"),dietary:val("cDiet"),allergies:val("cAllergy"),dietaryNotes:val("cDietNotes"),goals:val("cG"),injuries:val("cI"),medical:val("cM"),notes:val("cO")};}
 function saveNewClient(){var data=readClientForm();if(!data.name){toast("Name is required");return;}data.id=Date.now().toString();data.created_at=new Date().toISOString();clients.push(data);save();toast("\u2713 "+data.name+" added");navStack=[];currentView={tab:"clients",view:"detail",data:{clientIdx:clients.length-1}};render();}
 function saveEditClient(){var c=clients[currentView.data.clientIdx];if(!c)return;var data=readClientForm();if(!data.name){toast("Name is required");return;}Object.assign(c,data);save();toast("\u2713 Updated");pop();}
 
@@ -424,13 +433,13 @@ function renderClientDetail(){
   var col=clientColor(c.name);
   var cs=sessions.filter(function(x){return x.clientId===c.id;});
   var rev=cs.filter(function(x){return x.status!=="cancelled";}).reduce(function(a,x){return a+parseFloat(x.rate||c.rate||70);},0);
-  var info=[["Phone",c.phone],["Email",c.email],["Age",c.age],["Goals",c.goals],["Injuries",c.injuries],["Medical",c.medical],["Activity",c.activity],["Notes",c.notes]].filter(function(r){return r[1];});
+  var info=[["Phone",c.phone],["Email",c.email],["Age",c.age],["Dietary",c.dietary],["Allergies",c.allergies],["Goals",c.goals],["Injuries",c.injuries],["Medical",c.medical],["Activity",c.activity],["Notes",c.notes]].filter(function(r){return r[1];});
   var st2=calcStreak(c.id),ds2=daysSinceLastSession(c.id);
   var html='<button class="btn2" onclick="pop()" style="margin-bottom:14px">\u2039 Back</button>'
     +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">'
     +'<div style="width:58px;height:58px;border-radius:14px;background:rgba(170,185,200,.06);border:2px solid '+col+'60;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:'+col+';font-family:var(--mono)">'+c.name[0].toUpperCase()+'</div>'
     +'<div style="flex:1"><div style="font-size:22px;font-weight:800;font-family:var(--display)">'+esc(c.name)+'</div>'
-    +'<div style="font-size:12px;color:var(--acc);font-weight:600">'+(c.clientType||'In-Person')+' \u00b7 $'+c.rate+'/hr \u00b7 '+(c.level||"Beginner")+'</div>'
+    +'<div style="font-size:12px;color:var(--acc);font-weight:600">'+(c.clientType||'In-Person')+' \u00b7 $'+c.rate+'/hr \u00b7 '+(c.level||"Beginner")+((c.dietary||"").indexOf("Gluten-Free")>=0?' \u00b7 <span style="color:var(--success)">GF</span>':'')+'</div>'
     +(st2>=2||ds2!==null?'<div style="margin-top:4px;display:flex;gap:8px;align-items:center">'+(st2>=2?'<span style="font-size:9px;font-family:var(--mono);color:#90A4AE"> '+st2+'-week streak</span>':'')+((ds2!==null&&ds2>0)?'<span style="font-size:9px;font-family:var(--mono);color:'+(ds2<=3?"var(--success)":ds2<=10?"var(--warn)":"var(--danger)")+'">Last: '+ds2+'d ago</span>':'')+'</div>':'')
     +'</div>'
     +'<button class="btn2" onclick="push(\'edit\',{clientIdx:'+idx+'})" style="padding:6px 10px;font-size:9px">EDIT</button></div>';
@@ -1090,64 +1099,158 @@ var GUIDE_DATA=[
 ];
 var _guideSec=0,_guideExpanded=false,_guideSearch="";
 var FOOD_DB=[
-// PROTEINS (cat:"P")
-{n:"Chicken Breast",cal:165,p:31,c:0,f:3.6,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Ground Turkey 93/7",cal:170,p:21,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Tilapia",cal:128,p:26,c:0,f:2.7,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Cod",cal:105,p:23,c:0,f:0.9,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Salmon",cal:233,p:25,c:0,f:14,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Shrimp",cal:99,p:24,c:0,f:0.3,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Steak (Flank)",cal:192,p:29,c:0,f:8,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Steak (Sirloin)",cal:207,p:30,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Ground Beef 90/10",cal:196,p:27,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Bison",cal:143,p:28,c:0,f:2.4,unit:"oz",per:4,ck:1,cat:"P"},
-{n:"Egg Whites",cal:17,p:3.6,c:0.2,f:0,unit:"ea",per:1,ck:1,cat:"P"},
-{n:"Whole Egg",cal:72,p:6,c:0.4,f:5,unit:"ea",per:1,ck:1,cat:"P"},
-{n:"Whey Isolate",cal:110,p:25,c:2,f:0.5,unit:"scoop",per:1,ck:0,cat:"P"},
-{n:"Casein Protein",cal:120,p:24,c:3,f:1,unit:"scoop",per:1,ck:0,cat:"P"},
-{n:"Greek Yogurt 0%",cal:100,p:17,c:6,f:0.7,unit:"cup",per:1,ck:0,cat:"P"},
-{n:"Cottage Cheese 2%",cal:183,p:24,c:9.5,f:5,unit:"cup",per:1,ck:0,cat:"P"},
+// PROTEINS (cat:"P") — gf:1=gluten-free, gf:0=may contain gluten
+{n:"Chicken Breast",cal:165,p:31,c:0,f:3.6,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Chicken Thigh",cal:209,p:26,c:0,f:11,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Ground Chicken",cal:170,p:20,c:0,f:9.5,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Ground Turkey 93/7",cal:170,p:21,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Turkey Breast",cal:135,p:30,c:0,f:1,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Tilapia",cal:128,p:26,c:0,f:2.7,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Cod",cal:105,p:23,c:0,f:0.9,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Salmon",cal:233,p:25,c:0,f:14,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Shrimp",cal:99,p:24,c:0,f:0.3,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Tuna (canned)",cal:120,p:28,c:0,f:0.6,unit:"oz",per:4,ck:0,cat:"P",gf:1},
+{n:"Mahi Mahi",cal:109,p:24,c:0,f:1,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Sea Bass",cal:124,p:24,c:0,f:2.6,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Swordfish",cal:155,p:25,c:0,f:5.4,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Halibut",cal:140,p:27,c:0,f:2.9,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Scallops",cal:95,p:20,c:3,f:0.5,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Steak (Flank)",cal:192,p:29,c:0,f:8,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Steak (Sirloin)",cal:207,p:30,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Steak (NY Strip)",cal:230,p:28,c:0,f:12,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Filet Mignon",cal:227,p:28,c:0,f:12,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Ground Beef 96/4",cal:155,p:24,c:0,f:6,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Ground Beef 90/10",cal:196,p:27,c:0,f:9,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Ground Beef 80/20",cal:287,p:19,c:0,f:23,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Bison",cal:143,p:28,c:0,f:2.4,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Venison",cal:158,p:30,c:0,f:3.2,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Lamb Chop",cal:250,p:26,c:0,f:16,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Pork Tenderloin",cal:143,p:26,c:0,f:3.5,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Pork Chop (lean)",cal:187,p:30,c:0,f:7,unit:"oz",per:4,ck:1,cat:"P",gf:1},
+{n:"Egg Whites",cal:17,p:3.6,c:0.2,f:0,unit:"ea",per:1,ck:1,cat:"P",gf:1},
+{n:"Whole Egg",cal:72,p:6,c:0.4,f:5,unit:"ea",per:1,ck:1,cat:"P",gf:1},
+{n:"Whey Isolate",cal:110,p:25,c:2,f:0.5,unit:"scoop",per:1,ck:0,cat:"P",gf:1},
+{n:"Casein Protein",cal:120,p:24,c:3,f:1,unit:"scoop",per:1,ck:0,cat:"P",gf:1},
+{n:"Plant Protein (Pea)",cal:120,p:24,c:2,f:1.5,unit:"scoop",per:1,ck:0,cat:"P",gf:1},
+{n:"Collagen Peptides",cal:70,p:18,c:0,f:0,unit:"scoop",per:1,ck:0,cat:"P",gf:1},
+{n:"Greek Yogurt 0%",cal:100,p:17,c:6,f:0.7,unit:"cup",per:1,ck:0,cat:"P",gf:1},
+{n:"Greek Yogurt 2%",cal:150,p:15,c:8,f:4.5,unit:"cup",per:1,ck:0,cat:"P",gf:1},
+{n:"Cottage Cheese 2%",cal:183,p:24,c:9.5,f:5,unit:"cup",per:1,ck:0,cat:"P",gf:1},
+{n:"Skyr",cal:110,p:19,c:7,f:0.5,unit:"cup",per:1,ck:0,cat:"P",gf:1},
+{n:"Deli Turkey (GF)",cal:60,p:12,c:2,f:0.5,unit:"oz",per:3,ck:0,cat:"P",gf:1},
 // CARBS (cat:"C")
-{n:"White Rice",cal:206,p:4.3,c:45,f:0.4,unit:"cup",per:1,ck:1,cat:"C"},
-{n:"Jasmine Rice",cal:205,p:4.2,c:45,f:0.4,unit:"cup",per:1,ck:1,cat:"C"},
-{n:"Brown Rice",cal:216,p:5,c:45,f:1.8,unit:"cup",per:1,ck:1,cat:"C"},
-{n:"Cream of Rice",cal:170,p:3,c:38,f:0.5,unit:"cup",per:0.25,ck:0,cat:"C"},
-{n:"Oats",cal:150,p:5,c:27,f:2.5,unit:"cup",per:0.5,ck:0,cat:"C"},
-{n:"Sweet Potato",cal:103,p:2.3,c:24,f:0.1,unit:"oz",per:4,ck:1,cat:"C"},
-{n:"Red Potato",cal:94,p:2.5,c:21,f:0.1,unit:"oz",per:4,ck:1,cat:"C"},
-{n:"Ezekiel Bread",cal:80,p:5,c:15,f:0.5,unit:"slice",per:1,ck:0,cat:"C"},
-{n:"Rice Cakes",cal:35,p:0.7,c:7.3,f:0.3,unit:"ea",per:1,ck:0,cat:"C"},
-{n:"Banana",cal:105,p:1.3,c:27,f:0.4,unit:"ea",per:1,ck:0,cat:"C"},
-{n:"Blueberries",cal:84,p:1.1,c:21,f:0.5,unit:"cup",per:1,ck:0,cat:"C"},
-{n:"Honey",cal:64,p:0,c:17,f:0,unit:"tbsp",per:1,ck:0,cat:"C"},
+{n:"White Rice",cal:206,p:4.3,c:45,f:0.4,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Jasmine Rice",cal:205,p:4.2,c:45,f:0.4,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Brown Rice",cal:216,p:5,c:45,f:1.8,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Wild Rice",cal:166,p:6.5,c:35,f:0.6,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Basmati Rice",cal:210,p:4.4,c:46,f:0.5,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Cream of Rice",cal:170,p:3,c:38,f:0.5,unit:"cup",per:0.25,ck:0,cat:"C",gf:1},
+{n:"GF Oats",cal:150,p:5,c:27,f:2.5,unit:"cup",per:0.5,ck:0,cat:"C",gf:1},
+{n:"Oats (regular)",cal:150,p:5,c:27,f:2.5,unit:"cup",per:0.5,ck:0,cat:"C",gf:0},
+{n:"Sweet Potato",cal:103,p:2.3,c:24,f:0.1,unit:"oz",per:4,ck:1,cat:"C",gf:1},
+{n:"Red Potato",cal:94,p:2.5,c:21,f:0.1,unit:"oz",per:4,ck:1,cat:"C",gf:1},
+{n:"Russet Potato",cal:110,p:3,c:26,f:0.1,unit:"oz",per:4,ck:1,cat:"C",gf:1},
+{n:"Yukon Gold Potato",cal:100,p:2.5,c:23,f:0.1,unit:"oz",per:4,ck:1,cat:"C",gf:1},
+{n:"Quinoa",cal:222,p:8,c:39,f:3.5,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Buckwheat",cal:155,p:5.7,c:34,f:1,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Millet",cal:207,p:6,c:41,f:1.7,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Amaranth",cal:251,p:9.3,c:46,f:3.9,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"GF Pasta (rice)",cal:200,p:4,c:44,f:0.5,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"GF Pasta (chickpea)",cal:190,p:13,c:32,f:3,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"GF Pasta (lentil)",cal:180,p:12,c:30,f:1,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Pasta (wheat)",cal:220,p:8,c:43,f:1.3,unit:"cup",per:1,ck:1,cat:"C",gf:0},
+{n:"Ezekiel Bread",cal:80,p:5,c:15,f:0.5,unit:"slice",per:1,ck:0,cat:"C",gf:0},
+{n:"GF Bread (Udi's)",cal:70,p:1,c:13,f:2,unit:"slice",per:1,ck:0,cat:"C",gf:1},
+{n:"GF Tortilla (corn)",cal:60,p:1,c:12,f:0.5,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"GF Tortilla (cassava)",cal:130,p:1,c:22,f:4,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Flour Tortilla",cal:140,p:4,c:24,f:3,unit:"ea",per:1,ck:0,cat:"C",gf:0},
+{n:"Rice Cakes",cal:35,p:0.7,c:7.3,f:0.3,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Banana",cal:105,p:1.3,c:27,f:0.4,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Apple",cal:95,p:0.5,c:25,f:0.3,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Blueberries",cal:84,p:1.1,c:21,f:0.5,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Strawberries",cal:49,p:1,c:12,f:0.5,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Mango",cal:99,p:1.4,c:25,f:0.6,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Pineapple",cal:82,p:0.9,c:22,f:0.2,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Grapes",cal:104,p:1.1,c:27,f:0.2,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Orange",cal:62,p:1.2,c:15,f:0.2,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Dates (Medjool)",cal:66,p:0.4,c:18,f:0,unit:"ea",per:1,ck:0,cat:"C",gf:1},
+{n:"Honey",cal:64,p:0,c:17,f:0,unit:"tbsp",per:1,ck:0,cat:"C",gf:1},
+{n:"Maple Syrup",cal:52,p:0,c:13,f:0,unit:"tbsp",per:1,ck:0,cat:"C",gf:1},
+{n:"Plantain",cal:180,p:2,c:47,f:0.4,unit:"ea",per:1,ck:1,cat:"C",gf:1},
+{n:"Taro Root",cal:142,p:0.5,c:34,f:0.1,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Cassava",cal:160,p:1.4,c:38,f:0.3,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"GF Granola",cal:140,p:3,c:22,f:5,unit:"cup",per:0.33,ck:0,cat:"C",gf:1},
+{n:"Chickpeas (canned)",cal:210,p:11,c:35,f:3.5,unit:"cup",per:1,ck:0,cat:"C",gf:1},
+{n:"Black Beans",cal:227,p:15,c:41,f:0.9,unit:"cup",per:1,ck:1,cat:"C",gf:1},
+{n:"Lentils",cal:230,p:18,c:40,f:0.8,unit:"cup",per:1,ck:1,cat:"C",gf:1},
 // FATS (cat:"F")
-{n:"Avocado",cal:240,p:3,c:12,f:22,unit:"ea",per:1,ck:0,cat:"F"},
-{n:"Almond Butter",cal:98,p:3.4,c:3,f:9,unit:"tbsp",per:1,ck:0,cat:"F"},
-{n:"Peanut Butter",cal:94,p:4,c:3.5,f:8,unit:"tbsp",per:1,ck:0,cat:"F"},
-{n:"Almonds",cal:164,p:6,c:6,f:14,unit:"oz",per:1,ck:0,cat:"F"},
-{n:"Walnuts",cal:185,p:4.3,c:3.9,f:18.5,unit:"oz",per:1,ck:0,cat:"F"},
-{n:"Coconut Oil",cal:121,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F"},
-{n:"Olive Oil",cal:119,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F"},
-{n:"MCT Oil",cal:100,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F"},
+{n:"Avocado",cal:240,p:3,c:12,f:22,unit:"ea",per:1,ck:0,cat:"F",gf:1},
+{n:"Almond Butter",cal:98,p:3.4,c:3,f:9,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Peanut Butter",cal:94,p:4,c:3.5,f:8,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Cashew Butter",cal:94,p:3,c:4.5,f:8,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Sunflower Seed Butter",cal:99,p:3,c:4,f:9,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Tahini",cal:89,p:2.5,c:3,f:8,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Almonds",cal:164,p:6,c:6,f:14,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Walnuts",cal:185,p:4.3,c:3.9,f:18.5,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Cashews",cal:157,p:5,c:9,f:12,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Macadamia Nuts",cal:204,p:2.2,c:4,f:21,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Pecans",cal:196,p:2.6,c:4,f:20,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Pistachios",cal:161,p:6,c:8,f:13,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Pumpkin Seeds",cal:153,p:7,c:5,f:13,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Chia Seeds",cal:137,p:4.4,c:12,f:8.6,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Flax Seeds (ground)",cal:37,p:1.3,c:2,f:3,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Hemp Seeds",cal:166,p:9.5,c:2.6,f:14.6,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Coconut Oil",cal:121,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Olive Oil",cal:119,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Avocado Oil",cal:124,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"MCT Oil",cal:100,p:0,c:0,f:14,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Ghee",cal:112,p:0,c:0,f:13,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Grass-Fed Butter",cal:100,p:0,c:0,f:11,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
+{n:"Coconut Cream",cal:120,p:1,c:2,f:12,unit:"oz",per:2,ck:0,cat:"F",gf:1},
+{n:"Dark Chocolate 85%",cal:170,p:2,c:13,f:12,unit:"oz",per:1,ck:0,cat:"F",gf:1},
+{n:"Olives (Kalamata)",cal:36,p:0.3,c:2,f:3.2,unit:"tbsp",per:1,ck:0,cat:"F",gf:1},
 // VEGGIES (cat:"V")
-{n:"Broccoli",cal:55,p:3.7,c:11,f:0.6,unit:"cup",per:1,ck:1,cat:"V"},
-{n:"Asparagus",cal:40,p:4.3,c:7.4,f:0.2,unit:"cup",per:1,ck:1,cat:"V"},
-{n:"Green Beans",cal:44,p:2.4,c:10,f:0.4,unit:"cup",per:1,ck:1,cat:"V"},
-{n:"Spinach",cal:41,p:5.3,c:6.8,f:0.5,unit:"cup",per:1,ck:1,cat:"V"},
-{n:"Cucumber",cal:16,p:0.6,c:3.1,f:0.2,unit:"cup",per:1,ck:0,cat:"V"},
-{n:"Bell Pepper",cal:30,p:1,c:7,f:0.3,unit:"ea",per:1,ck:0,cat:"V"}
+{n:"Broccoli",cal:55,p:3.7,c:11,f:0.6,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Asparagus",cal:40,p:4.3,c:7.4,f:0.2,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Green Beans",cal:44,p:2.4,c:10,f:0.4,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Spinach",cal:41,p:5.3,c:6.8,f:0.5,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Kale",cal:33,p:2.9,c:6,f:0.5,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Brussels Sprouts",cal:56,p:4,c:11,f:0.8,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Cauliflower",cal:27,p:2,c:5,f:0.3,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Cauliflower Rice",cal:25,p:2,c:5,f:0.3,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Zucchini",cal:20,p:1.5,c:3.5,f:0.4,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Zucchini Noodles",cal:20,p:1.5,c:3.5,f:0.4,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Spaghetti Squash",cal:42,p:1,c:10,f:0.4,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Cucumber",cal:16,p:0.6,c:3.1,f:0.2,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Bell Pepper",cal:30,p:1,c:7,f:0.3,unit:"ea",per:1,ck:0,cat:"V",gf:1},
+{n:"Mushrooms",cal:22,p:3,c:3,f:0.3,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Tomatoes",cal:32,p:1.6,c:7,f:0.4,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Onion",cal:46,p:1.3,c:11,f:0.1,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Carrots",cal:52,p:1.2,c:12,f:0.3,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Celery",cal:14,p:0.7,c:3,f:0.2,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Cabbage",cal:22,p:1.3,c:5,f:0.1,unit:"cup",per:1,ck:1,cat:"V",gf:1},
+{n:"Mixed Greens",cal:10,p:1,c:2,f:0.1,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Arugula",cal:5,p:0.5,c:0.7,f:0.1,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Edamame",cal:188,p:18,c:14,f:8,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Sugar Snap Peas",cal:41,p:3,c:7,f:0.2,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Artichoke Hearts",cal:45,p:2.4,c:10,f:0.2,unit:"cup",per:1,ck:0,cat:"V",gf:1},
+{n:"Beets",cal:58,p:2.2,c:13,f:0.2,unit:"cup",per:1,ck:1,cat:"V",gf:1}
 ];
+var _gfFilter=false;
 
 var _nutView="plans",_nutClientId="",_editMealPlan=null;
 function calcMealTotals(meal){var t={cal:0,p:0,c:0,f:0};(meal.foods||[]).forEach(function(fd){var db=FOOD_DB[fd.di];if(!db)return;var m=fd.qty/db.per;t.cal+=Math.round(db.cal*m);t.p+=Math.round(db.p*m);t.c+=Math.round(db.c*m);t.f+=Math.round(db.f*m);});return t;}
 function calcPlanTotals(mp){var t={cal:0,p:0,c:0,f:0};(mp.meals||[]).forEach(function(ml){var mt=calcMealTotals(ml);t.cal+=mt.cal;t.p+=mt.p;t.c+=mt.c;t.f+=mt.f;});return t;}
 function renderNutrition(){
   var html='<div class="pt">Nutrition</div>';
-  var tabs2=[["plans","Meal Plans"],["supps","Supplements"],["water","Water"]];
-  html+='<div style="display:flex;gap:4px;margin-bottom:16px">';
+  var tabs2=[["plans","Meal Plans"],["macros","Macros"],["grocery","Grocery"],["checkins","Check-Ins"],["supps","Supplements"],["water","Water"]];
+  html+='<div style="display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap">';
   for(var i=0;i<tabs2.length;i++){var st=tabs2[i];html+='<div class="chip'+(_nutView===st[0]?" on":"")+'" onclick="_nutView=\''+st[0]+'\';render()">'+st[1]+'</div>';}
   html+='</div>';
   if(_nutView==="plans")html+=renderMealPlans();
+  else if(_nutView==="macros")html+=renderMacroCalc();
+  else if(_nutView==="grocery")html+=renderGroceryList();
+  else if(_nutView==="checkins")html+=renderCheckIns();
   else if(_nutView==="supps")html+=renderSupplements();
   else html+=renderWaterTracker();
   return html;
@@ -1166,15 +1269,19 @@ function renderMealPlanEdit(){
   var tot=calcPlanTotals(mp);
   var cOpts='<option value="">Unassigned</option>';for(var i=0;i<clients.length;i++)cOpts+='<option value="'+clients[i].id+'"'+(mp.clientId===clients[i].id?' selected':'')+'>'+esc(clients[i].name)+'</option>';
   var html='<button class="btn2" onclick="_editMealPlan=null;render()" style="margin-bottom:14px">\u2039 Back</button>'
-    +'<div class="cd" style="padding:14px;margin-bottom:14px"><div class="g2 field"><div><span class="lb">PLAN NAME</span><input id="mpN" value="'+esc(mp.name)+'" onchange="mpSet(\'name\',this.value)"></div><div><span class="lb">CLIENT</span><select onchange="mpSet(\'clientId\',this.value)">'+cOpts+'</select></div></div></div>'
-    +'<div class="cd" style="padding:14px;margin-bottom:14px;border:1px solid var(--accB)"><div style="display:flex;justify-content:space-around;text-align:center"><div><div style="font-size:20px;font-weight:800;color:var(--acc);font-family:var(--mono)">'+tot.cal+'</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">CALORIES</div></div><div><div style="font-size:18px;font-weight:700;color:var(--success);font-family:var(--mono)">'+tot.p+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">PROTEIN</div></div><div><div style="font-size:18px;font-weight:700;color:var(--warn);font-family:var(--mono)">'+tot.c+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">CARBS</div></div><div><div style="font-size:18px;font-weight:700;color:#cc88ee;font-family:var(--mono)">'+tot.f+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">FAT</div></div></div></div>';
+    +'<div class="cd" style="padding:14px;margin-bottom:14px"><div class="g2 field"><div><span class="lb">PLAN NAME</span><input id="mpN" value="'+esc(mp.name)+'" onchange="mpSet(\'name\',this.value)"></div><div><span class="lb">CLIENT</span><select onchange="mpSet(\'clientId\',this.value)">'+cOpts+'</select></div></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--borderS);margin-top:4px"><div class="chip'+(_gfFilter?' on':'')+'" onclick="_gfFilter=!_gfFilter;render()" style="font-size:9px;padding:4px 10px;background:'+(_gfFilter?'rgba(120,200,120,.12)':'var(--accS)')+';border-color:'+(_gfFilter?'rgba(120,200,120,.35)':'rgba(180,195,210,.4)')+';color:'+(_gfFilter?'var(--success)':'var(--ow)')+'">GF ONLY</div><span style="font-size:9px;color:var(--dm);font-family:var(--mono)">'+(_gfFilter?'Showing gluten-free foods only':'Showing all foods')+'</span></div></div>'
+    +'<div class="cd" style="padding:14px;margin-bottom:14px;border:1px solid var(--accB)"><div style="display:flex;justify-content:space-around;text-align:center"><div><div style="font-size:20px;font-weight:800;color:var(--acc);font-family:var(--mono)">'+tot.cal+'</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">CALORIES</div></div><div><div style="font-size:18px;font-weight:700;color:var(--success);font-family:var(--mono)">'+tot.p+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">PROTEIN</div></div><div><div style="font-size:18px;font-weight:700;color:var(--warn);font-family:var(--mono)">'+tot.c+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">CARBS</div></div><div><div style="font-size:18px;font-weight:700;color:#cc88ee;font-family:var(--mono)">'+tot.f+'g</div><div style="font-size:8px;color:var(--dm);font-family:var(--mono)">FAT</div></div></div>'
+    +(mp.targetMacros?'<div style="margin-top:8px;padding:6px 0;border-top:1px solid var(--borderS);display:flex;justify-content:space-around;text-align:center;font-size:8px;font-family:var(--mono);color:var(--dm)"><span>TARGET: '+mp.targetMacros.cal+'cal</span><span style="color:'+(tot.p>=mp.targetMacros.p*0.9?"var(--success)":"var(--danger)")+'">P:'+tot.p+'/'+mp.targetMacros.p+'g</span><span style="color:'+(tot.c>=mp.targetMacros.c*0.8?"var(--success)":"var(--warn)")+'">C:'+tot.c+'/'+mp.targetMacros.c+'g</span><span style="color:'+(tot.f<=mp.targetMacros.f*1.1?"var(--success)":"var(--danger)")+'">F:'+tot.f+'/'+mp.targetMacros.f+'g</span></div>':'')
+    +'</div>';
   for(var m=0;m<mp.meals.length;m++){var meal=mp.meals[m],mt=calcMealTotals(meal);
     html+='<div class="cd" style="padding:14px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><input value="'+esc(meal.name)+'" onchange="mealName('+m+',this.value)" style="font-size:14px;font-weight:700;border:none;background:none;color:var(--wh);padding:0;flex:1"><span style="font-size:9px;color:var(--acc);font-family:var(--mono)">'+mt.cal+'cal \u00b7 '+mt.p+'p</span><span style="font-size:14px;color:var(--danger);cursor:pointer;margin-left:8px" onclick="rmMeal('+m+')">\u2715</span></div>';
-    for(var f=0;f<meal.foods.length;f++){var fd=meal.foods[f],db=FOOD_DB[fd.di]||{};
-      html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(180,195,210,.2)"><span style="flex:1;font-size:11px;color:var(--ow)">'+esc(fd.name)+'</span><input type="number" value="'+fd.qty+'" onchange="fdQty('+m+','+f+',this.value)" style="width:42px;text-align:center;font-size:10px;padding:3px"><span style="font-size:9px;color:var(--dm);font-family:var(--mono);min-width:28px">'+fd.unit+'</span><span style="font-size:9px;color:var(--dm);font-family:var(--mono);min-width:38px;text-align:right">'+Math.round((db.cal||0)*(fd.qty/(db.per||1)))+'cal</span><span style="font-size:12px;color:var(--danger);cursor:pointer;padding:0 4px" onclick="rmFood('+m+','+f+')">\u2715</span></div>';}
-    html+='<div style="margin-top:8px"><select onchange="addFood('+m+',this.value);this.selectedIndex=0" style="font-size:11px;padding:6px"><option value="">+ Add food...</option>';
+    var _mpClient=clientById(mp.clientId),_isGFClient=_mpClient&&(_mpClient.dietary||"").indexOf("Gluten-Free")>=0;
+    for(var f=0;f<meal.foods.length;f++){var fd=meal.foods[f],db=FOOD_DB[fd.di]||{};var _glWarn=_isGFClient&&!db.gf;
+      html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid '+(_glWarn?'rgba(216,120,120,.3)':'rgba(180,195,210,.2)')+'"><span style="flex:1;font-size:11px;color:'+(_glWarn?'var(--danger)':'var(--ow)')+'">'+esc(fd.name)+(_glWarn?' <span style="font-size:7px;background:rgba(216,120,120,.15);color:var(--danger);padding:1px 4px;border-radius:3px;font-family:var(--mono)">GLUTEN</span>':'')+(db.gf?' <span style="font-size:7px;color:var(--success);font-family:var(--mono)">GF</span>':'')+'</span><input type="number" value="'+fd.qty+'" onchange="fdQty('+m+','+f+',this.value)" style="width:42px;text-align:center;font-size:10px;padding:3px"><span style="font-size:9px;color:var(--dm);font-family:var(--mono);min-width:28px">'+fd.unit+'</span><span style="font-size:9px;color:var(--dm);font-family:var(--mono);min-width:38px;text-align:right">'+Math.round((db.cal||0)*(fd.qty/(db.per||1)))+'cal</span><span style="font-size:12px;color:var(--danger);cursor:pointer;padding:0 4px" onclick="rmFood('+m+','+f+')">\u2715</span></div>';}
+    html+='<div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select onchange="addFood('+m+',this.value);this.selectedIndex=0" style="font-size:11px;padding:6px;flex:1"><option value="">+ Add food...</option>';
     var cats=[["P","PROTEIN"],["C","CARBS"],["F","FATS"],["V","VEGGIES"]];
-    for(var ci2=0;ci2<cats.length;ci2++){html+='<optgroup label="'+cats[ci2][1]+'">';for(var d=0;d<FOOD_DB.length;d++){if(FOOD_DB[d].cat===cats[ci2][0])html+='<option value="'+d+'">'+FOOD_DB[d].n+' ('+FOOD_DB[d].unit+(FOOD_DB[d].ck?' ck':'')+')</option>';}html+='</optgroup>';}
+    for(var ci2=0;ci2<cats.length;ci2++){html+='<optgroup label="'+cats[ci2][1]+'">';for(var d=0;d<FOOD_DB.length;d++){if(FOOD_DB[d].cat===cats[ci2][0]&&(!_gfFilter||FOOD_DB[d].gf))html+='<option value="'+d+'">'+FOOD_DB[d].n+(FOOD_DB[d].gf?' \u2713GF':' \u26a0GL')+' ('+FOOD_DB[d].unit+(FOOD_DB[d].ck?' ck':'')+')</option>';}html+='</optgroup>';}
     html+='</select></div></div>';}
   html+='<button class="btn2" onclick="addMeal()" style="width:100%;margin-top:4px">+ ADD MEAL</button>'
     +'<button class="btn-danger" style="margin-top:16px" onclick="delPlan()">DELETE PLAN</button>';
@@ -1232,6 +1339,122 @@ function renderWaterTracker(){
 }
 function logH2O(v){var cl=clientById(_nutClientId);if(!cl)return;if(!cl.water)cl.water={goal:128,logs:{}};var t=todayISO();cl.water.logs[t]=Math.max(0,(cl.water.logs[t]||0)+v);save();render();}
 function setH2OGoal(v){var cl=clientById(_nutClientId);if(!cl)return;if(!cl.water)cl.water={goal:128,logs:{}};cl.water.goal=parseInt(v)||128;save();render();}
+
+// -- MACRO CALCULATOR --
+var _macroGender="female",_macroGoal="cut",_macroActivity="moderate";
+function renderMacroCalc(){
+  if(!_nutClientId&&clients.length)_nutClientId=clients[0].id;
+  var cl=clientById(_nutClientId);
+  var html='<div style="margin-bottom:12px"><select onchange="_nutClientId=this.value;render()" style="font-size:12px">';
+  for(var i=0;i<clients.length;i++)html+='<option value="'+clients[i].id+'"'+(_nutClientId===clients[i].id?" selected":"")+'>'+esc(clients[i].name)+'</option>';
+  html+='</select></div>';
+  if(!cl)return html+'<div class="cd" style="padding:20px;text-align:center;color:var(--dm)">Add a client first</div>';
+  var isGF=(cl.dietary||"").indexOf("Gluten-Free")>=0;
+  if(isGF)html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:rgba(120,200,120,.06);border:1px solid rgba(120,200,120,.2);margin-bottom:12px"><span style="font-size:12px">GF</span><span style="font-size:10px;color:var(--success);font-family:var(--mono)">GLUTEN-FREE CLIENT</span></div>';
+  html+='<div class="sl">BODY STATS</div><div class="cd" style="padding:16px"><div class="g2 field"><div><span class="lb">WEIGHT (lbs)</span><input id="mcW" type="number" value="'+(cl.weight||'')+'" placeholder="lbs" onchange="calcMacros()"></div><div><span class="lb">HEIGHT</span><input id="mcH" type="number" placeholder="inches total" value="'+(cl.heightIn||'')+'" onchange="calcMacros()"></div></div>'
+    +'<div class="g2 field"><div><span class="lb">AGE</span><input id="mcA" type="number" value="'+(cl.age||'')+'" onchange="calcMacros()"></div><div><span class="lb">BODY FAT % (optional)</span><input id="mcBF" type="number" placeholder="%" onchange="calcMacros()"></div></div>'
+    +'<span class="lb">GENDER</span><div style="display:flex;gap:4px;margin-bottom:12px"><div class="chip'+(_macroGender==="female"?" on":"")+'" onclick="_macroGender=\'female\';calcMacros()">Female</div><div class="chip'+(_macroGender==="male"?" on":"")+'" onclick="_macroGender=\'male\';calcMacros()">Male</div></div>'
+    +'<span class="lb">ACTIVITY LEVEL</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px"><div class="chip'+(_macroActivity==="sedentary"?" on":"")+'" onclick="_macroActivity=\'sedentary\';calcMacros()">Sedentary</div><div class="chip'+(_macroActivity==="light"?" on":"")+'" onclick="_macroActivity=\'light\';calcMacros()">Light</div><div class="chip'+(_macroActivity==="moderate"?" on":"")+'" onclick="_macroActivity=\'moderate\';calcMacros()">Moderate</div><div class="chip'+(_macroActivity==="active"?" on":"")+'" onclick="_macroActivity=\'active\';calcMacros()">Very Active</div><div class="chip'+(_macroActivity==="athlete"?" on":"")+'" onclick="_macroActivity=\'athlete\';calcMacros()">Athlete</div></div>'
+    +'<span class="lb">GOAL</span><div style="display:flex;gap:4px;margin-bottom:4px"><div class="chip'+(_macroGoal==="cut"?" on":"")+'" onclick="_macroGoal=\'cut\';calcMacros()">Fat Loss</div><div class="chip'+(_macroGoal==="maintain"?" on":"")+'" onclick="_macroGoal=\'maintain\';calcMacros()">Maintain</div><div class="chip'+(_macroGoal==="bulk"?" on":"")+'" onclick="_macroGoal=\'bulk\';calcMacros()">Lean Bulk</div><div class="chip'+(_macroGoal==="aggbulk"?" on":"")+'" onclick="_macroGoal=\'aggbulk\';calcMacros()">Bulk</div></div></div>';
+  html+='<div id="macroResults"></div>';
+  html+='<script>setTimeout(calcMacros,50)<\/script>';
+  return html;
+}
+function calcMacros(){
+  var w=parseFloat((el("mcW")||{}).value)||0,h=parseFloat((el("mcH")||{}).value)||0,a=parseFloat((el("mcA")||{}).value)||25,bf=parseFloat((el("mcBF")||{}).value)||0;
+  var res=el("macroResults");if(!res||!w)return;
+  var bmr;
+  if(bf>0){var lbm=w*(1-bf/100);bmr=370+21.6*(lbm*0.453592);}
+  else{var wKg=w*0.453592,hCm=h*2.54;if(_macroGender==="male")bmr=10*wKg+6.25*hCm-5*a+5;else bmr=10*wKg+6.25*hCm-5*a-161;}
+  var mult={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,athlete:1.9};
+  var tdee=Math.round(bmr*(mult[_macroActivity]||1.55));
+  var adj={cut:-500,maintain:0,bulk:250,aggbulk:500};
+  var target=tdee+(adj[_macroGoal]||0);
+  var pMult={cut:1.2,maintain:1.0,bulk:1.0,aggbulk:0.9};
+  var protG=Math.round(w*(pMult[_macroGoal]||1.0));
+  var fMult={cut:0.35,maintain:0.3,bulk:0.25,aggbulk:0.25};
+  var fatCal=Math.round(target*(fMult[_macroGoal]||0.3));
+  var fatG=Math.round(fatCal/9);
+  var carbCal=target-(protG*4)-(fatG*9);
+  var carbG=Math.round(carbCal/4);if(carbG<0)carbG=50;
+  res.innerHTML='<div class="sl" style="margin-top:16px">CALCULATED MACROS</div>'
+    +'<div class="g2" style="margin-bottom:12px"><div class="stat"><b style="color:var(--acc)">'+Math.round(bmr)+'</b><small>BMR</small></div><div class="stat"><b style="color:var(--ow)">'+tdee+'</b><small>TDEE</small></div></div>'
+    +'<div class="cd" style="padding:16px;border:1px solid var(--accB)"><div style="text-align:center;margin-bottom:14px"><div style="font-size:32px;font-weight:800;color:var(--accVib);font-family:var(--mono)">'+target+'</div><div style="font-size:9px;color:var(--dm);font-family:var(--mono);letter-spacing:.12em">TARGET CALORIES</div></div>'
+    +'<div class="g3"><div class="stat" style="border-color:rgba(120,200,120,.3)"><b style="color:var(--success);font-size:22px">'+protG+'g</b><small>PROTEIN</small><div style="font-size:8px;color:var(--dm);margin-top:2px">'+(protG*4)+' cal</div></div><div class="stat" style="border-color:rgba(200,180,120,.3)"><b style="color:var(--warn);font-size:22px">'+carbG+'g</b><small>CARBS</small><div style="font-size:8px;color:var(--dm);margin-top:2px">'+(carbG*4)+' cal</div></div><div class="stat" style="border-color:rgba(200,120,220,.3)"><b style="color:#cc88ee;font-size:22px">'+fatG+'g</b><small>FAT</small><div style="font-size:8px;color:var(--dm);margin-top:2px">'+(fatG*9)+' cal</div></div></div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn2" onclick="saveMacrosToClient('+target+','+protG+','+carbG+','+fatG+')" style="flex:1">SAVE TO CLIENT</button><button class="btn" onclick="createPlanFromMacros('+target+','+protG+','+carbG+','+fatG+')" style="flex:1">CREATE MEAL PLAN</button></div>'
+    +'<div style="margin-top:12px;padding:10px;background:rgba(170,185,200,.04);border:1px solid var(--borderS);border-radius:8px"><div style="font-size:9px;color:var(--dm);font-family:var(--mono);line-height:1.8">PER MEAL (4 meals): '+Math.round(target/4)+' cal \u00b7 '+Math.round(protG/4)+'p \u00b7 '+Math.round(carbG/4)+'c \u00b7 '+Math.round(fatG/4)+'f<br>PER MEAL (5 meals): '+Math.round(target/5)+' cal \u00b7 '+Math.round(protG/5)+'p \u00b7 '+Math.round(carbG/5)+'c \u00b7 '+Math.round(fatG/5)+'f<br>PER MEAL (6 meals): '+Math.round(target/6)+' cal \u00b7 '+Math.round(protG/6)+'p \u00b7 '+Math.round(carbG/6)+'c \u00b7 '+Math.round(fatG/6)+'f</div></div>';
+}
+function saveMacrosToClient(cal,p,c2,f){var cl=clientById(_nutClientId);if(!cl)return;cl.targetMacros={cal:cal,p:p,c:c2,f:f};save();toast("\u2713 Macros saved to "+cl.name);}
+function createPlanFromMacros(cal,p,c2,f){var mp={id:Date.now().toString(),name:"Macro Plan ("+cal+" cal)",clientId:_nutClientId,meals:[{name:"Meal 1",foods:[]},{name:"Meal 2",foods:[]},{name:"Meal 3",foods:[]},{name:"Meal 4",foods:[]},{name:"Post-Workout",foods:[]}],targetMacros:{cal:cal,p:p,c:c2,f:f},created_at:new Date().toISOString()};mealPlans.push(mp);save();_nutView="plans";_editMealPlan=mp.id;render();toast("\u2713 Meal plan created");}
+
+// -- GROCERY LIST GENERATOR --
+function renderGroceryList(){
+  var html='<div class="sl">GENERATE FROM MEAL PLAN</div>';
+  if(!mealPlans.length)return html+'<div class="cd" style="padding:24px;text-align:center;border:1px dashed var(--border)"><div style="color:var(--dm);margin-bottom:8px">No meal plans yet</div><button class="btn2" onclick="_nutView=\'plans\';render()">CREATE MEAL PLAN FIRST</button></div>';
+  html+='<div class="cd" style="padding:14px"><span class="lb">SELECT PLAN</span><select id="groceryPlanSel" onchange="genGrocery()" style="margin-bottom:8px"><option value="">Choose...</option>';
+  for(var i=0;i<mealPlans.length;i++)html+='<option value="'+mealPlans[i].id+'">'+esc(mealPlans[i].name)+'</option>';
+  html+='</select><div class="g2"><div><span class="lb">DAYS</span><input id="groceryDays" type="number" value="7" min="1" max="30" onchange="genGrocery()"></div><div><span class="lb">SERVINGS</span><input id="groceryServings" type="number" value="1" min="1" max="10" onchange="genGrocery()"></div></div></div>';
+  html+='<div id="groceryOutput"></div>';
+  return html;
+}
+function genGrocery(){
+  var planId=(el("groceryPlanSel")||{}).value;if(!planId)return;
+  var mp=mealPlans.find(function(p){return p.id===planId;});if(!mp)return;
+  var days=parseInt((el("groceryDays")||{}).value)||7,servings=parseInt((el("groceryServings")||{}).value)||1;
+  var items={};
+  (mp.meals||[]).forEach(function(meal){(meal.foods||[]).forEach(function(fd){var db=FOOD_DB[fd.di];if(!db)return;var key=fd.di;if(!items[key])items[key]={name:db.n,qty:0,unit:db.unit,cat:db.cat,gf:db.gf,ck:db.ck};items[key].qty+=fd.qty*days*servings;});});
+  var sorted=Object.values(items).sort(function(a,b){var catOrder={P:0,C:1,F:2,V:3};return(catOrder[a.cat]||9)-(catOrder[b.cat]||9);});
+  var out=el("groceryOutput");if(!out)return;
+  var catNames={P:"PROTEIN",C:"CARBS",F:"FATS",V:"VEGGIES"};
+  var h='<div class="sl" style="margin-top:16px">GROCERY LIST \u00b7 '+days+' DAYS</div>';
+  var lastCat="";
+  for(var i=0;i<sorted.length;i++){var it=sorted[i];if(it.cat!==lastCat){lastCat=it.cat;h+='<div style="font-size:9px;color:var(--acc);font-family:var(--mono);letter-spacing:.12em;margin:12px 0 6px;padding-top:8px;border-top:1px solid var(--borderS)">'+(catNames[it.cat]||"OTHER")+'</div>';}
+    var qtyDisp=Math.round(it.qty*10)/10;
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--acc)"><span style="flex:1;font-size:12px;color:var(--wh)">'+esc(it.name)+'</span><span style="font-size:11px;color:var(--acc);font-family:var(--mono);font-weight:700">'+qtyDisp+' '+it.unit+'</span>'+(it.gf?'<span style="font-size:7px;color:var(--success);font-family:var(--mono)">GF</span>':'<span style="font-size:7px;color:var(--danger);font-family:var(--mono)">GL</span>')+'</div>';}
+  h+='<button class="btn2" onclick="copyGrocery()" style="width:100%;margin-top:14px">COPY LIST</button>';
+  out.innerHTML=h;
+  window._lastGrocery=sorted;
+}
+function copyGrocery(){if(!window._lastGrocery)return;var txt="GROCERY LIST\\n";window._lastGrocery.forEach(function(it){txt+="[ ] "+it.name+" - "+(Math.round(it.qty*10)/10)+" "+it.unit+(it.gf?" (GF)":"")+"\\n";});if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){toast("\u2713 Copied to clipboard");});else toast("Copy not supported");}
+
+// -- WEEKLY CHECK-INS --
+function renderCheckIns(){
+  if(!_nutClientId&&clients.length)_nutClientId=clients[0].id;
+  var cl=clientById(_nutClientId);
+  var html='<div style="margin-bottom:12px"><select onchange="_nutClientId=this.value;render()" style="font-size:12px">';
+  for(var i=0;i<clients.length;i++)html+='<option value="'+clients[i].id+'"'+(_nutClientId===clients[i].id?" selected":"")+'>'+esc(clients[i].name)+'</option>';
+  html+='</select></div>';
+  if(!cl)return html+'<div class="cd" style="padding:20px;text-align:center;color:var(--dm)">Add a client first</div>';
+  if(!cl.checkIns)cl.checkIns=[];
+  var isGF=(cl.dietary||"").indexOf("Gluten-Free")>=0;
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="sl" style="margin:0">WEEKLY CHECK-INS'+(isGF?' <span style="color:var(--success)">GF</span>':'')+'</span><button class="btn2" onclick="newCheckIn()" style="padding:6px 10px;font-size:8px">+ NEW CHECK-IN</button></div>';
+  html+='<div id="checkInForm" style="display:none"><div class="cd" style="padding:16px;border:1px solid var(--accB)"><div class="g2 field"><div><span class="lb">DATE</span><input id="ciDate" type="date" value="'+todayISO()+'"></div><div><span class="lb">WEIGHT (lbs)</span><input id="ciWeight" type="number" step="0.1"></div></div>'
+    +'<div class="g2 field"><div><span class="lb">WAIST (in)</span><input id="ciWaist" type="number" step="0.1"></div><div><span class="lb">BODY FAT %</span><input id="ciBF" type="number" step="0.1"></div></div>'
+    +'<div class="sl" style="margin-top:8px">ADHERENCE (1-10)</div><div class="g3 field"><div><span class="lb">TRAINING</span><input id="ciTrain" type="number" min="1" max="10" placeholder="1-10"></div><div><span class="lb">NUTRITION</span><input id="ciNut" type="number" min="1" max="10" placeholder="1-10"></div><div><span class="lb">SLEEP</span><input id="ciSleep" type="number" min="1" max="10" placeholder="1-10"></div></div>'
+    +'<div class="g2 field"><div><span class="lb">ENERGY LEVEL</span><select id="ciEnergy"><option>Low</option><option>Moderate</option><option selected>Good</option><option>High</option><option>Peak</option></select></div><div><span class="lb">STRESS LEVEL</span><select id="ciStress"><option>Low</option><option selected>Moderate</option><option>High</option><option>Very High</option></select></div></div>'
+    +'<div class="field"><span class="lb">DIGESTION / GUT HEALTH</span><select id="ciDigestion"><option>Poor</option><option>Fair</option><option selected>Good</option><option>Great</option></select></div>'
+    +(isGF?'<div class="field" style="padding:8px 12px;background:rgba(120,200,120,.06);border:1px solid rgba(120,200,120,.2);border-radius:8px"><span class="lb" style="color:var(--success)">GF COMPLIANCE</span><select id="ciGF"><option value="100">100% - Perfect</option><option value="95">95% - Minor slip</option><option value="80">80% - Some gluten exposure</option><option value="50">50% - Struggled</option></select></div>':'')
+    +'<div class="field"><span class="lb">WINS THIS WEEK</span><textarea id="ciWins" rows="2" placeholder="PRs, habits, mindset..."></textarea></div>'
+    +'<div class="field"><span class="lb">STRUGGLES</span><textarea id="ciStruggles" rows="2" placeholder="Challenges, cravings, schedule..."></textarea></div>'
+    +'<div class="field"><span class="lb">COACH NOTES</span><textarea id="ciCoachNotes" rows="2" placeholder="Your feedback..."></textarea></div>'
+    +'<button class="btn" onclick="saveCheckIn()">SAVE CHECK-IN</button></div></div>';
+  if(!cl.checkIns.length)return html+'<div class="cd" style="padding:24px;text-align:center;border:1px dashed var(--border);color:var(--dm)">No check-ins yet</div>';
+  var recent=cl.checkIns.slice().reverse();
+  for(var i=0;i<recent.length;i++){var ci=recent[i];
+    var adherenceAvg=Math.round(((parseInt(ci.train)||0)+(parseInt(ci.nutrition)||0)+(parseInt(ci.sleep)||0))/3);
+    html+='<div class="cd" style="padding:14px;border-left:3px solid '+(adherenceAvg>=8?"var(--success)":adherenceAvg>=5?"var(--warn)":"var(--danger)")+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--wh);font-family:var(--mono)">'+fmtDate(ci.date)+'</span><div style="display:flex;gap:4px;align-items:center">'+(ci.gfCompliance?'<span style="font-size:8px;font-family:var(--mono);color:var(--success);background:rgba(120,200,120,.1);padding:2px 6px;border-radius:4px">GF:'+ci.gfCompliance+'%</span>':'')+'<span style="font-size:11px;color:var(--danger);cursor:pointer;padding:2px 4px" onclick="deleteCheckIn(\''+ci.id+'\')">\u2715</span></div></div>'
+      +'<div class="g3" style="margin-bottom:8px"><div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--acc);font-family:var(--mono)">'+(ci.weight||"\u2014")+'</div><div style="font-size:8px;color:var(--dm)">WEIGHT</div></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--ow);font-family:var(--mono)">'+(ci.waist||"\u2014")+'</div><div style="font-size:8px;color:var(--dm)">WAIST</div></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;color:#cc88ee;font-family:var(--mono)">'+(ci.bf||"\u2014")+'%</div><div style="font-size:8px;color:var(--dm)">BF%</div></div></div>'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px"><span style="font-size:9px;font-family:var(--mono);color:var(--dm)">TRAIN:'+ci.train+'</span><span style="font-size:9px;font-family:var(--mono);color:var(--dm)">NUT:'+ci.nutrition+'</span><span style="font-size:9px;font-family:var(--mono);color:var(--dm)">SLEEP:'+ci.sleep+'</span><span style="font-size:9px;font-family:var(--mono);color:var(--dm)">ENERGY:'+ci.energy+'</span></div>'
+      +(ci.wins?'<div style="font-size:11px;color:var(--success);margin:4px 0"><span style="font-size:8px;font-family:var(--mono);color:var(--dm)">WINS: </span>'+esc(ci.wins)+'</div>':'')
+      +(ci.struggles?'<div style="font-size:11px;color:var(--warn);margin:4px 0"><span style="font-size:8px;font-family:var(--mono);color:var(--dm)">STRUGGLES: </span>'+esc(ci.struggles)+'</div>':'')
+      +(ci.coachNotes?'<div style="font-size:11px;color:var(--acc);margin:4px 0;padding:6px;background:rgba(170,185,200,.04);border-radius:6px"><span style="font-size:8px;font-family:var(--mono);color:var(--dm)">COACH: </span>'+esc(ci.coachNotes)+'</div>':'')
+      +'</div>';
+  }
+  return html;
+}
+function newCheckIn(){var f=el("checkInForm");if(f)f.style.display=f.style.display==="none"?"block":"none";}
+function saveCheckIn(){var cl=clientById(_nutClientId);if(!cl)return;if(!cl.checkIns)cl.checkIns=[];var ci={id:Date.now().toString(),date:val("ciDate")||todayISO(),weight:val("ciWeight"),waist:val("ciWaist"),bf:val("ciBF"),train:val("ciTrain"),nutrition:val("ciNut"),sleep:val("ciSleep"),energy:val("ciEnergy"),stress:val("ciStress"),digestion:val("ciDigestion"),gfCompliance:val("ciGF")||"",wins:val("ciWins"),struggles:val("ciStruggles"),coachNotes:val("ciCoachNotes")};cl.checkIns.push(ci);if(ci.weight){if(!cl.weightLog)cl.weightLog=[];cl.weightLog.push({date:ci.date,lbs:parseFloat(ci.weight)});}save();toast("\u2713 Check-in saved");render();}
+function deleteCheckIn(cid){var cl=clientById(_nutClientId);if(!cl||!cl.checkIns)return;cl.checkIns=cl.checkIns.filter(function(c2){return c2.id!==cid;});save();render();}
 
 function toggleSvcChip(el2){el2.classList.toggle("on");var cs=el2.parentNode.querySelectorAll(".chip.on"),vs=[];cs.forEach(function(c2){vs.push(c2.textContent);});var inp=document.getElementById("cSv");if(inp)inp.value=vs.join(",");}
 function toggleBillFields(){var bv=val("cBv"),bf=document.getElementById("billFields"),pw=document.getElementById("prepMonthsWrap");if(bf)bf.style.display=bv!=="Per Session"?"block":"none";if(pw)pw.style.display=bv==="Prepaid"?"block":"none";}
